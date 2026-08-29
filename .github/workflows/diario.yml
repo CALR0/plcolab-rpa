@@ -1,0 +1,79 @@
+name: Cargue diario facture -> RNDC
+
+# El "cron" del bot: corre en la nube de GitHub (no en fe-tool ni en un PC).
+on:
+  schedule:
+    - cron: "0 13 * * *"   # 13:00 UTC = 08:00 Colombia. 1x/día.
+  workflow_dispatch:        # permite lanzarlo a mano desde la pestaña Actions
+    inputs:
+      fecha:
+        description: "Fecha objetivo ('ayer' o YYYY-MM-DD)"
+        default: "ayer"
+      dry_run:
+        description: "true = genera pero NO sube"
+        default: "false"
+
+jobs:
+  cargue:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout (con submodule fe-tool)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive   # requiere fe-tool añadido como git submodule en ./fe-tool
+
+      - name: Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Dependencias
+        run: |
+          pip install -r requirements.txt
+          python -m playwright install --with-deps chromium
+
+      - name: Credenciales fe-tool (perfiles.py desde Secrets)
+        env:
+          FE_TOOL_PERFILES: ${{ secrets.FE_TOOL_PERFILES }}
+        run: |
+          mkdir -p fe-tool/config
+          printf '%s' "$FE_TOOL_PERFILES" > fe-tool/config/perfiles.py
+
+      - name: Correr pipeline
+        env:
+          FE_TOOL_PATH: ./fe-tool
+          FACTURE_USER: ${{ secrets.FACTURE_USER }}
+          FACTURE_PASS: ${{ secrets.FACTURE_PASS }}
+          RNDC_ENDPOINT: "Producción (rndcws)"
+          PLAYWRIGHT_HEADLESS: "1"
+          # Correo del reporte (opcional; si no defines los secrets, se omite el envío)
+          SMTP_HOST: ${{ secrets.SMTP_HOST || 'smtp.gmail.com' }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT || '587' }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          MAIL_TO: ${{ secrets.MAIL_TO }}
+          MAIL_FROM: ${{ secrets.MAIL_FROM }}
+        run: |
+          python pipeline.py \
+            --fecha "${{ github.event.inputs.fecha || 'ayer' }}" \
+            ${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }}
+
+      # Respaldo: el reporte Excel + zip quedan descargables desde la ejecución.
+      - name: Subir reporte como artefacto
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reporte-facturas
+          path: salidas/
+          if-no-files-found: ignore
+
+      # Idempotencia persistente entre corridas: guarda estado.json como artefacto.
+      # (Alternativa más robusta: commitearlo a una rama o usar cache/actions.)
+      - name: Guardar estado.json
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: estado
+          path: estado.json
+          if-no-files-found: ignore

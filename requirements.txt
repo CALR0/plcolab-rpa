@@ -1,0 +1,9 @@
+# Bot plcolab-rpa
+requests>=2.31
+pandas>=2.0
+openpyxl>=3.1
+playwright>=1.44
+python-dotenv>=1.0
+
+# Nota: fe-tool aporta sus propias dependencias (openpyxl, etc.). Si al importar
+# fe-tool faltara alguna, agrégala aquí.

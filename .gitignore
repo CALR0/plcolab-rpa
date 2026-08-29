@@ -1,0 +1,30 @@
+# Credenciales y entorno
+.env
+*.env
+!.env.example
+
+# Estado / salidas
+estado.json
+salidas/
+*.zip
+*.log
+
+# fe-tool como submodule (se enlaza con git submodule, no se sube su contenido aquí)
+# (si usas submodule, git lo maneja; esta línea evita subir una copia suelta)
+/fe-tool-local/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Playwright
+/playwright-report/
+/.playwright/
+
+# Editor / SO
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
