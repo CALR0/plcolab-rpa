@@ -3,7 +3,8 @@ name: Cargue diario facture -> RNDC
 # El "cron" del bot: corre en la nube de GitHub (no en fe-tool ni en un PC).
 on:
   schedule:
-    - cron: "0 13 * * *"   # 13:00 UTC = 08:00 Colombia. 1x/día.
+    - cron: "15 13 * * *"  # 13:15 UTC = 08:15 Colombia (UTC-5). 1x/día.
+                           # Procesa la fecha de AYER (hoy 29 -> revisa el 28).
   workflow_dispatch:        # permite lanzarlo a mano desde la pestaña Actions
     inputs:
       fecha:
