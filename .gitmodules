@@ -1,0 +1,3 @@
+[submodule "fe-tool"]
+	path = fe-tool
+	url = https://github.com/CALR0/FE-ToolApp.git
