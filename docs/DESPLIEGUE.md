@@ -47,11 +47,26 @@ En GitHub → repo `plcolab-rpa` → **Settings → Secrets and variables → Ac
 
 El workflow escribe `FE_TOOL_PERFILES` en `fe-tool/config/perfiles.py` antes de correr.
 
-## 4. Programación
+## 4. Programación (con cron-job.org, no con el schedule de GitHub)
 
-`.github/workflows/diario.yml` ya trae:
-- `cron: "0 13 * * *"` → 08:00 Colombia (13:00 UTC). Cámbialo si quieres otra hora.
-- `workflow_dispatch` → botón para lanzarlo a mano (con `fecha` y `dry_run`).
+El `schedule` propio de GitHub es impreciso (se retrasa horas o no dispara), así que
+lo quité. La corrida diaria la dispara un programador externo puntual: **cron-job.org**.
+
+El workflow solo deja `workflow_dispatch` (disparo por API o botón manual). Para
+programarlo:
+
+1. Crear un **PAT fino** en GitHub (Settings → Developer settings → Fine-grained
+   tokens), solo para el repo `plcolab-rpa`, con permiso **Actions: Read and write**.
+2. En **cron-job.org** (cuenta gratis) crear un job:
+   - **Método:** POST
+   - **URL:** `https://api.github.com/repos/CALR0/plcolab-rpa/actions/workflows/diario.yml/dispatches`
+   - **Headers:** `Authorization: Bearer <PAT>`, `Accept: application/vnd.github+json`,
+     `Content-Type: application/json`, `User-Agent: cron-job`
+   - **Body:** `{"ref":"main"}`
+   - **Horario:** la hora deseada en zona horaria de Colombia (ej. 8:15, diario).
+3. Un dispatch exitoso responde **HTTP 204**. GitHub corre el workflow casi al instante.
+
+Para lanzarlo a mano igual sirve el botón **Run workflow** de la pestaña Actions.
 
 ## 5. Idempotencia (`estado.json`)
 

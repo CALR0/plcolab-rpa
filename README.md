@@ -85,14 +85,29 @@ de correr; en local uso mi copia de fe-tool.
 
 ## Cómo se ejecuta
 
-Corre en **GitHub Actions** con un cron diario. El flujo del login usa **Playwright**
-en modo headless (facture cifra la autenticación, así que no se puede replicar solo
-con HTTP); una vez tengo el token, todo lo demás es HTTP puro. El resto —listar,
-traer contenido, consultar radicados, subir— no necesita navegador.
+El proceso vive como un workflow en **GitHub Actions**, pero **no lo dispara el cron
+propio de GitHub** (su `schedule` es impreciso: se retrasa horas o no dispara). En
+su lugar uso un programador externo puntual, **cron-job.org**: todos los días a las
+8:15 (hora Colombia) le pega a la API de GitHub para lanzar el workflow, y GitHub lo
+corre casi al instante. Con eso consigo una hora fija y confiable, sin montar ni
+mantener un servidor. El disparo es un simple POST a:
 
-No hay frontend. El seguimiento lo hago por dos vías: el correo que llega con el
-reporte, y la propia página de Actions en GitHub (historial de corridas, logs y los
-archivos generados como artefacto).
+```
+POST https://api.github.com/repos/CALR0/plcolab-rpa/actions/workflows/diario.yml/dispatches
+body: {"ref":"main"}
+```
+
+que equivale a apretar "Run workflow". El workflow arranca la máquina temporal, corre
+el pipeline y se apaga. Con `fecha` en `ayer`, procesa el día anterior (hoy 30
+procesa el 29).
+
+El login usa **Playwright** en modo headless (facture cifra la autenticación, así que
+no se puede replicar solo con HTTP); una vez tengo el token, todo lo demás —listar,
+traer contenido, consultar radicados, subir— es HTTP puro, sin navegador.
+
+No hay frontend. El seguimiento lo hago por dos vías: el correo con el reporte, y la
+página de Actions en GitHub (historial de corridas, logs y los archivos generados
+como artefacto).
 
 ## El reporte y el correo
 
@@ -123,7 +138,8 @@ plcolab-rpa/
   settings.py          Configuración desde variables de entorno / .env.
   requirements.txt
   .github/workflows/
-    diario.yml         El cron y los pasos de la corrida en la nube.
+    diario.yml         Los pasos de la corrida en la nube. Se dispara por API
+                       (cron-job.org), no por el schedule de GitHub.
   docs/
     DESPLIEGUE.md       Cómo montarlo (submódulo, secrets, etc.).
   fe-tool/             Submódulo: mi herramienta FE-Tool (código reutilizado).

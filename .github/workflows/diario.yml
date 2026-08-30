@@ -1,11 +1,14 @@
 name: Cargue diario facture -> RNDC
 
-# El "cron" del bot: corre en la nube de GitHub (no en fe-tool ni en un PC).
+# Este workflow corre en la nube de GitHub, pero NO lo dispara el `schedule` de
+# GitHub (su cron es impreciso y poco fiable: se retrasa horas o no dispara).
+# Lo dispara un programador externo PUNTUAL (cron-job.org) que a las 08:15 hora
+# Colombia llama a la API de GitHub:
+#   POST https://api.github.com/repos/CALR0/plcolab-rpa/actions/workflows/diario.yml/dispatches
+#   body: {"ref":"main"}
+# Eso equivale al botón "Run workflow" y corre casi al instante.
 on:
-  schedule:
-    - cron: "15 13 * * *"  # 13:15 UTC = 08:15 Colombia (UTC-5). 1x/día.
-                           # Procesa la fecha de AYER (hoy 29 -> revisa el 28).
-  workflow_dispatch:        # permite lanzarlo a mano desde la pestaña Actions
+  workflow_dispatch:        # disparo por API (cron-job.org) o a mano desde Actions
     inputs:
       fecha:
         description: "Fecha objetivo ('ayer' o YYYY-MM-DD)"
