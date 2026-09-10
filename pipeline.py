@@ -165,6 +165,9 @@ def run(fecha_arg, dry_run=False, debug_login=False):
             sinc = fb.remesas_sin_cumplir(d)
             if sinc:
                 msg = "Remesas sin cumplir: " + ", ".join(sinc)
+                pend = fb.remesas_pendientes_manifiesto(d)
+                if pend:
+                    msg += " · Pendientes de asignar manifiesto: " + ", ".join(pend)
         _fila(ok, msg)
         if ok:
             subidas.append(nf)

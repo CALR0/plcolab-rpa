@@ -138,6 +138,20 @@ def remesas_sin_cumplir(d):
     return out
 
 
+def remesas_pendientes_manifiesto(d):
+    """Subconjunto de las no cumplidas que además NO tienen manifiesto asignado
+    (estado != 'CE' y sin manifiesto) = pendientes de ASIGNAR manifiesto."""
+    out = []
+    for rem in d.get("remesas", []):
+        estado = (rem.get("estado") or "").strip().upper()
+        manif = (rem.get("manifiesto") or "").strip()
+        if estado and estado != "CE" and not manif:
+            c = (rem.get("consecutivo") or "").strip()
+            if c:
+                out.append(c)
+    return out
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # 4) Generar XML + enviar al RNDC (proceso 86), agrupado por perfil
 # ─────────────────────────────────────────────────────────────────────────────
