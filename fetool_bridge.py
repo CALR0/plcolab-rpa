@@ -105,11 +105,37 @@ def completar_radicados(facturas):
             if consec and rad.lower() in ("", "nan", "none", "0"):
                 try:
                     ok, res = consultar_radicado_remesa(consec, pf)
-                    rem["radicado"] = res.get("radicado", "0") if ok else "0"
+                    if ok:
+                        rem["radicado"] = res.get("radicado", "0")
+                        # estado (AC/CE/…) y manifiesto asociado: sirven para
+                        # explicar los rechazos por "remesa sin cumplir".
+                        rem["estado"] = (res.get("estado") or "").strip().upper()
+                        rem["manifiesto"] = (res.get("manifiesto") or "").strip()
+                    else:
+                        rem["radicado"] = "0"
                 except Exception:
                     rem["radicado"] = "0"
             elif not rad or rad.lower() in ("nan", "none"):
                 rem["radicado"] = "0"
+
+
+def remesas_sin_cumplir(d):
+    """Consecutivos de las remesas NO CUMPLIDAS de la factura (estado != 'CE').
+
+    Una remesa cumplida queda en estado 'CE'; las demás (típicamente 'AC') están
+    pendientes de cumplir. El detalle del manifiesto distingue el motivo:
+      - sin manifiesto  → pendiente de ASIGNAR manifiesto,
+      - con manifiesto  → manifiesto asignado pero pendiente de CUMPLIR.
+    Requiere haber corrido completar_radicados antes (ahí se captura estado/manifiesto).
+    """
+    out = []
+    for rem in d.get("remesas", []):
+        estado = (rem.get("estado") or "").strip().upper()
+        if estado and estado != "CE":
+            c = (rem.get("consecutivo") or "").strip()
+            if c:
+                out.append(c)
+    return out
 
 
 # ─────────────────────────────────────────────────────────────────────────────

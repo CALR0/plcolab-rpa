@@ -159,6 +159,12 @@ def run(fecha_arg, dry_run=False, debug_login=False):
             ok, msg = fb.enviar_al_rndc(xml, pf)
         except Exception as e:
             ok, msg = False, str(e)
+        # Si el rechazo es por remesa sin cumplir (FAC080), detallo en la novedad
+        # cuáles remesas están pendientes de asignar manifiesto (estado AC sin manif.).
+        if not ok and ("FAC080" in msg or "sin cumplir" in msg.lower()):
+            sinc = fb.remesas_sin_cumplir(d)
+            if sinc:
+                msg = "Remesas sin cumplir: " + ", ".join(sinc)
         _fila(ok, msg)
         if ok:
             subidas.append(nf)
