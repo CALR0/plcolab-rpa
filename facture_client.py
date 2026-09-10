@@ -9,9 +9,16 @@ Cliente de facture.co (PLColab).
 
 Endpoints verificados 2026-08-29 sobre la cuenta UT.
 """
+import re
+
 import requests
 
 import settings as config
+
+# Un consecutivo válido empieza con el prefijo de un perfil: TSP (300/120) o
+# Elogia (101/0101). Sirve para descartar valores y radicados que facture a veces
+# mete por error en los campos del consecutivo.
+_RE_CONSEC = re.compile(r"^(300|120|0101|101)\d")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -187,9 +194,30 @@ def _prop(linea, nombre):
 
 
 def consecutivo_de_linea(linea):
-    """Consecutivo REAL de la remesa = propiedad '02' (NO 'CodigoItem', que a
-    veces trae el radicado). Verificado en factura 411930."""
-    return _prop(linea, "02") or _prop(linea, "CodigoItem")
+    """Elige el consecutivo REAL de la remesa de forma robusta.
+
+    Facture es inconsistente: a veces mete el VALOR o el RADICADO en 'CodigoItem'
+    o en '02'. Ejemplos reales:
+      - 411930: 'CodigoItem' traía el radicado y '02' el consecutivo.
+      - 412057: '02' traía el valor y 'CodigoItem' el consecutivo.
+    Estrategia: entre '02' y 'CodigoItem', tomo el que tenga FORMA de consecutivo
+    (prefijo de perfil 300/120/101/0101) y que NO coincida con el valor de la línea.
+    Si ninguno califica, devuelvo lo que haya (queda marcado como perfil no resuelto).
+    """
+    cod = _prop(linea, "CodigoItem")
+    p02 = _prop(linea, "02")
+    valor = re.sub(r"\D", "", str(_prop(linea, "ValorTotalItem")
+                                  or _prop(linea, "03")
+                                  or linea.get("PriceAmount") or ""))
+
+    def valido(v):
+        s = re.sub(r"\D", "", str(v or ""))
+        return bool(s) and s != valor and bool(_RE_CONSEC.match(s))
+
+    for cand in (p02, cod):        # '02' primero (canónico); si no sirve, CodigoItem
+        if valido(cand):
+            return cand
+    return p02 or cod
 
 
 def datos_cliente(content3):
