@@ -159,15 +159,22 @@ def run(fecha_arg, dry_run=False, debug_login=False):
             ok, msg = fb.enviar_al_rndc(xml, pf)
         except Exception as e:
             ok, msg = False, str(e)
-        # Si el rechazo es por remesa sin cumplir (FAC080), detallo en la novedad
-        # cuáles remesas están pendientes de asignar manifiesto (estado AC sin manif.).
-        if not ok and ("FAC080" in msg or "sin cumplir" in msg.lower()):
-            sinc = fb.remesas_sin_cumplir(d)
-            if sinc:
-                msg = "Remesas sin cumplir: " + ", ".join(sinc)
-                pend = fb.remesas_pendientes_manifiesto(d)
-                if pend:
-                    msg += " · Pendientes de asignar manifiesto: " + ", ".join(pend)
+        # Novedad detallada cuando falla: primero reviso si hay remesas SIN RADICADO
+        # (no existen en el RNDC → el envío devuelve algo vacío tipo "."); si no, si es
+        # un rechazo por remesa sin cumplir (FAC080) detallo las pendientes.
+        if not ok:
+            sin_rad, ws_err = fb.remesas_sin_radicado(d)
+            if sin_rad:
+                msg = "Remesa sin radicado: " + ", ".join(sin_rad)
+                if ws_err:
+                    msg += " (error de webservice al consultar)"
+            elif "FAC080" in msg or "sin cumplir" in msg.lower():
+                sinc = fb.remesas_sin_cumplir(d)
+                if sinc:
+                    msg = "Remesas sin cumplir: " + ", ".join(sinc)
+                    pend = fb.remesas_pendientes_manifiesto(d)
+                    if pend:
+                        msg += " · Pendientes de asignar manifiesto: " + ", ".join(pend)
         _fila(ok, msg)
         if ok:
             subidas.append(nf)

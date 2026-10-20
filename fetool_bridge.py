@@ -113,8 +113,12 @@ def completar_radicados(facturas):
                         rem["manifiesto"] = (res.get("manifiesto") or "").strip()
                     else:
                         rem["radicado"] = "0"
-                except Exception:
+                        # guardo el motivo: 'Documento no encontrado' = la remesa no
+                        # existe; otros = error de webservice/conexión.
+                        rem["radicado_error"] = str(res)
+                except Exception as e:
                     rem["radicado"] = "0"
+                    rem["radicado_error"] = str(e)
             elif not rad or rad.lower() in ("nan", "none"):
                 rem["radicado"] = "0"
 
@@ -150,6 +154,28 @@ def remesas_pendientes_manifiesto(d):
             if c:
                 out.append(c)
     return out
+
+
+def remesas_sin_radicado(d):
+    """(consecutivos_sin_radicado, hubo_error_webservice).
+
+    Una remesa queda 'sin radicado' cuando la consulta en el RNDC no lo resolvió
+    (radicado '0'): porque la remesa NO EXISTE (Error RNDC11: Documento no encontrado)
+    o por un error de webservice/conexión. En el XML el radicado se deja en '0';
+    esto sirve para explicar el rechazo en la novedad. Requiere completar_radicados.
+    """
+    sin, ws = [], False
+    for rem in d.get("remesas", []):
+        rad = str(rem.get("radicado") or "").strip().lower()
+        if rad in ("", "0", "nan", "none"):
+            c = (rem.get("consecutivo") or "").strip()
+            if c:
+                sin.append(c)
+            err = (rem.get("radicado_error") or "").lower()
+            # 'no encontrado'/RNDC11 = la remesa no existe; otra cosa = webservice.
+            if err and not any(k in err for k in ("no encontrado", "rndc11")):
+                ws = True
+    return sin, ws
 
 
 # ─────────────────────────────────────────────────────────────────────────────
