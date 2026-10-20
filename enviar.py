@@ -136,6 +136,8 @@ def enviar_correo(asunto, html, adjuntos=None):
     msg = EmailMessage()
     msg["From"] = settings.MAIL_FROM or settings.SMTP_USER
     msg["To"] = settings.MAIL_TO
+    if settings.MAIL_CC.strip():
+        msg["Cc"] = settings.MAIL_CC          # send_message envía a To + Cc
     msg["Subject"] = asunto
     msg.set_content("Este correo requiere un cliente compatible con HTML.")
     msg.add_alternative(html, subtype="html")

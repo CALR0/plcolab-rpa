@@ -56,6 +56,7 @@ SMTP_PORT = int(os.getenv("SMTP_PORT", "587") or "587")
 SMTP_USER = os.getenv("SMTP_USER", "")
 SMTP_PASS = os.getenv("SMTP_PASS", "")
 MAIL_TO = os.getenv("MAIL_TO", "")           # destinatario(s), separados por coma
+MAIL_CC = os.getenv("MAIL_CC", "")           # copia (CC), separados por coma; opcional
 MAIL_FROM = os.getenv("MAIL_FROM", "")       # opcional; por defecto = SMTP_USER
 
 
